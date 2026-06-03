@@ -316,6 +316,14 @@ export interface RumInitConfiguration extends InitConfiguration {
   trackLongTasks?: boolean | undefined
 
   /**
+   * Enables collection of WebSocket resource events.
+   *
+   * @category Data Collection
+   * @defaultValue false
+   */
+  trackWebSockets?: boolean | undefined
+
+  /**
    * List of plugins to enable. The plugins API is unstable and experimental, and may change without
    * notice. Please use only plugins provided by Datadog matching the version of the SDK you are
    * using.
@@ -390,6 +398,7 @@ export interface RumConfiguration extends Configuration {
   trackResources: boolean
   trackResourceHeaders: MatchHeader[]
   trackLongTasks: boolean
+  trackWebSockets: boolean
   subdomain?: string
   traceContextInjection: TraceContextInjection
   plugins: RumPlugin[]
@@ -461,6 +470,7 @@ export function validateAndBuildRumConfiguration(
     trackResources: !!(initConfiguration.trackResources ?? true),
     trackResourceHeaders: validateAndBuildTrackResourceHeaders(initConfiguration),
     trackLongTasks: !!(initConfiguration.trackLongTasks ?? true),
+    trackWebSockets: !!initConfiguration.trackWebSockets,
     subdomain: initConfiguration.subdomain,
     defaultPrivacyLevel: objectHasValue(DefaultPrivacyLevel, initConfiguration.defaultPrivacyLevel)
       ? initConfiguration.defaultPrivacyLevel

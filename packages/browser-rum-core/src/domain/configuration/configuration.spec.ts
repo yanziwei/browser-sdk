@@ -594,6 +594,28 @@ describe('validateAndBuildRumConfiguration', () => {
     })
   })
 
+  describe('trackWebSockets', () => {
+    it('defaults to false', () => {
+      expect(validateAndBuildRumConfiguration(DEFAULT_INIT_CONFIGURATION)!.trackWebSockets).toBeFalse()
+    })
+
+    it('is set to provided value', () => {
+      expect(
+        validateAndBuildRumConfiguration({ ...DEFAULT_INIT_CONFIGURATION, trackWebSockets: true })!.trackWebSockets
+      ).toBeTrue()
+      expect(
+        validateAndBuildRumConfiguration({ ...DEFAULT_INIT_CONFIGURATION, trackWebSockets: false })!.trackWebSockets
+      ).toBeFalse()
+    })
+
+    it('the provided value is cast to boolean', () => {
+      expect(
+        validateAndBuildRumConfiguration({ ...DEFAULT_INIT_CONFIGURATION, trackWebSockets: 'foo' as any })!
+          .trackWebSockets
+      ).toBeTrue()
+    })
+  })
+
   describe('serializeRumConfiguration', () => {
     describe('selected tracing propagators serialization', () => {
       it('should not return any propagator type', () => {
@@ -824,6 +846,7 @@ describe('serializeRumConfiguration', () => {
       trackViewsManually: true,
       trackResources: true,
       trackLongTasks: true,
+      trackWebSockets: false,
       remoteConfigurationId: '123',
       remoteConfiguration: { id: '123', sync: false },
       remoteConfigurationProxy: 'config',
@@ -847,7 +870,8 @@ describe('serializeRumConfiguration', () => {
           ? 'track_long_task' // We forgot the s, keeping this for backward compatibility
           : // The following options are not reported as telemetry. Please avoid adding more of them.
             // `remoteConfiguration` is covered by the legacy `remote_configuration_id` field.
-            Key extends 'applicationId' | 'subdomain' | 'remoteConfiguration'
+            // `trackWebSockets` telemetry is deferred until rum-events-format schema is updated.
+            Key extends 'applicationId' | 'subdomain' | 'remoteConfiguration' | 'trackWebSockets'
             ? never
             : CamelToSnakeCase<Key>
     // By specifying the type here, we can ensure that serializeConfiguration is returning an
