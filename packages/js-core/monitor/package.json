@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "main": "../cjs/monitor.js",
+  "module": "../esm/monitor.js",
+  "types": "../cjs/monitor.d.ts"
+}

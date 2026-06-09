@@ -46,7 +46,11 @@ Do not add:
 ### Sub-path exports
 
 All APIs live under a named sub-path (e.g. `@datadog/js-core/time`). There is no root entry
-point. Each sub-path corresponds to a single source file under `src/`.
+point. Each sub-path is backed either by a single source file (`src/<name>.ts`) or, when the
+implementation spans multiple files, by a folder with a barrel `index.ts` (`src/<name>/index.ts`
+re-exporting from sibling files like `src/<name>/display.ts`). The build (`tsc`) mirrors the `src/`
+tree into `cjs/`/`esm/`, so a folder emits `cjs/<name>/index.js`; point the `exports` and the
+physical fallback at `<name>/index.js` in that case.
 
 Each sub-path is exposed **two ways** for maximum compatibility:
 
@@ -61,15 +65,27 @@ Each sub-path is exposed **two ways** for maximum compatibility:
 
 When adding a new sub-path:
 
-1. Create `src/<name>.ts`
+1. Create `src/<name>.ts` (single file) or `src/<name>/index.ts` (folder with a barrel)
 2. Add `"./<name>"` to the `exports` field in `package.json` with `import`, `require`, and `types`
-   conditions
+   conditions (target `<name>.js` for a single file, `<name>/index.js` for a folder)
 3. Add a physical `<name>/package.json` with relative `main`/`module`/`types` (see
-   `time/package.json`), and add `"<name>"` to the `files` array so it ships in the package
+   `time/package.json` for a file, `util/package.json` for a folder), and add `"<name>"` to the
+   `files` array so it ships in the package
 4. Add `"@datadog/js-core/<name>"` to the `paths` map in the root `tsconfig.base.json`
+5. Add a section for the new sub-path in `README.md` (see below)
+
+### README maintenance
+
+Every sub-path must have a corresponding section in `README.md`. When adding or changing exports:
+
+- Add or update the sub-path section in `README.md` with an import example and API table(s)
+- **Sort all entries within each API table alphabetically** (by export name)
+- Follow the existing section structure: import example → Types table (if any) → Constants table (if any) → Functions table
 
 ## Current sub-paths
 
-| Sub-path                | Source file   | Description    |
-| ----------------------- | ------------- | -------------- |
-| `@datadog/js-core/time` | `src/time.ts` | Time utilities |
+| Sub-path                   | Source file      | Description       |
+| -------------------------- | ---------------- | ----------------- |
+| `@datadog/js-core/monitor` | `src/monitor.ts` | Monitor utilities |
+| `@datadog/js-core/time`    | `src/time.ts`    | Time utilities    |
+| `@datadog/js-core/util`    | `src/util/`      | General utilities |
