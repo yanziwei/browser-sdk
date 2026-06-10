@@ -1,9 +1,9 @@
-import { Observable } from '../tools/observable'
-import type { ClocksState } from '../tools/utils/timeUtils'
-import { clocksNow } from '../tools/utils/timeUtils'
+import type { ClocksState } from '@datadog/js-core/time'
+import { clocksNow } from '@datadog/js-core/time'
 import type { GlobalObject } from '../tools/globalObject'
 import { globalObject } from '../tools/globalObject'
 import { instrumentConstructor, instrumentMethod } from '../tools/instrumentMethod'
+import { Observable } from '../tools/observable'
 import { addEventListener } from './addEventListener'
 
 interface WebSocketObservableConfiguration {

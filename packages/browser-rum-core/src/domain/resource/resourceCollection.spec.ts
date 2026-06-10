@@ -24,6 +24,7 @@ import { LifeCycle, LifeCycleEventType } from '../lifeCycle'
 import type { RequestCompleteEvent } from '../requestCollection'
 import { getDocumentTraceId } from '../tracing/getDocumentTraceId'
 import { createSpanIdentifier, createTraceIdentifier } from '../tracing/identifier'
+import type { WebSocketCompleteEvent } from '../webSocketCollection'
 import { REQUEST_MATCHING_DELAY, startResourceCollection } from './resourceCollection'
 
 function buildMatchHeadersForAllUrls(headerNames: MatchOption[]): MatchHeader[] {
@@ -1277,6 +1278,129 @@ describe('resourceCollection', () => {
     taskQueuePushSpy.calls.allArgs().forEach(([task], index) => {
       task()
       expect(rawRumEvents.length).toBe(index + 1)
+    })
+  })
+
+  describe('websocket', () => {
+    const wsUrl = 'wss://example.com/socket'
+    const ONE_MILLISECOND_IN_NANOSECONDS = 1e6
+
+    function toServerDurationFromMs(durationInMilliseconds: number): ServerDuration {
+      return (durationInMilliseconds * ONE_MILLISECOND_IN_NANOSECONDS) as ServerDuration
+    }
+
+    function getRawWebsocketResourceEvent(index = 0): RawRumResourceEvent {
+      return rawRumEvents[index].rawRumEvent as RawRumResourceEvent
+    }
+
+    function getWebsocketResource(index = 0) {
+      return getRawWebsocketResourceEvent(index).resource
+    }
+
+    function notifyWebSocket(overrides: Partial<WebSocketCompleteEvent> = {}) {
+      const defaultStartTime = 1_700_000_000_000 as TimeStamp
+      const defaultStartRelativeTime = 200 as RelativeTime
+      const defaultEndTime = 1_700_000_005_000 as TimeStamp
+      const defaultEndRelativeTime = 5_200 as RelativeTime
+      const defaultMessagesIn = { count: 3, size: 300 }
+      const defaultMessagesOut = { count: 2, size: 200 }
+      const defaultCloseCode = 1000
+
+      const event: WebSocketCompleteEvent = {
+        connectionId: 'connection-uuid',
+        url: wsUrl,
+        startClocks: { relative: defaultStartRelativeTime, timeStamp: defaultStartTime },
+        endClocks: { relative: defaultEndRelativeTime, timeStamp: defaultEndTime },
+        messagesIn: defaultMessagesIn,
+        messagesOut: defaultMessagesOut,
+        longestSilence: 0 as Duration,
+        bufferedAmountMax: 0,
+        handshakeSucceeded: false,
+        trackingEndReason: 'close_event',
+        closeCode: defaultCloseCode,
+        closeReason: 'bye',
+        wasClean: true,
+        ...overrides,
+      }
+      lifeCycle.notify(LifeCycleEventType.WEBSOCKET_COMPLETED, event)
+      runTasks()
+      return event
+    }
+
+    it('emits a resource event with type=websocket on close', () => {
+      setupResourceCollection()
+
+      const protocol = 'chat.v1'
+      const viewId = 'view-1'
+      const timeToFirstMessageIn = 10 as Duration
+      const timeToFirstMessageOut = 25 as Duration
+      const lastMessageAt = 1_700_000_004_000 as TimeStamp
+      const longestSilence = 200 as Duration
+      const bufferedAmountMax = 1024
+      const idleDurationBeforeClose = 1000 as Duration
+      const setupDuration = 42 as Duration
+
+      const event = notifyWebSocket({
+        protocol,
+        startViewId: viewId,
+        endViewId: viewId,
+        firstMessageInOffset: timeToFirstMessageIn,
+        firstMessageOutOffset: timeToFirstMessageOut,
+        lastMessageAt,
+        longestSilence,
+        bufferedAmountMax,
+        idleDurationBeforeClose,
+        setupDuration,
+        handshakeSucceeded: true,
+      })
+
+      const expectedEventCount = 1
+      const expectedResourceDuration = toServerDurationFromMs(event.endClocks.relative - event.startClocks.relative)
+
+      expect(rawRumEvents.length).toBe(expectedEventCount)
+
+      const rawEvent = getRawWebsocketResourceEvent()
+      expect(rawEvent.resource.type).toBe(ResourceType.WEBSOCKET)
+      expect(rawEvent.resource.status_code).toBeUndefined()
+      expect(rawEvent.resource.url).toBe(wsUrl)
+      expect(rawEvent.resource.duration).toBe(expectedResourceDuration)
+      expect(rawEvent.date).toBe(event.startClocks.timeStamp)
+      expect(rawEvent.resource.websocket).toEqual({
+        connection_id: event.connectionId,
+        handshake_succeeded: true,
+        start_time: event.startClocks.timeStamp,
+        end_time: event.endClocks.timeStamp,
+        start_view_id: viewId,
+        end_view_id: viewId,
+        tracking_end_reason: 'close_event',
+        close_code: event.closeCode,
+        close_reason: 'bye',
+        was_clean: true,
+        messages_in: event.messagesIn,
+        messages_out: event.messagesOut,
+        time_to_first_message_in: timeToFirstMessageIn,
+        time_to_first_message_out: timeToFirstMessageOut,
+        last_message_at: lastMessageAt,
+        longest_silence: longestSilence,
+        idle_duration_before_close: idleDurationBeforeClose,
+        buffered_amount_max: bufferedAmountMax,
+        protocol,
+        setup_duration: setupDuration,
+      })
+    })
+
+    it('emits an event spanning two views', () => {
+      setupResourceCollection()
+      const startViewId = 'view-a'
+      const endViewId = 'view-b'
+      notifyWebSocket({ startViewId, endViewId })
+
+      const expectedEventCount = 1
+      expect(rawRumEvents.length).toBe(expectedEventCount)
+
+      const websocket = getWebsocketResource().websocket!
+      expect(websocket.start_view_id).toBe(startViewId)
+      expect(websocket.end_view_id).toBe(endViewId)
     })
   })
 
