@@ -63,6 +63,18 @@ Each sub-path is exposed **two ways** for maximum compatibility:
   (webpack 4, old Node, older Jest/ts-node). Relative `main`/`module`/`types` pointing at the
   same built files.
 
+### Fully-specified relative imports
+
+Because the package ships strict ESM (`esm/package.json` has `"type": "module"`), every **relative**
+import in `src/` must be **fully specified with a `.js` extension** — including barrel/directory
+imports, which must name the index explicitly (e.g. `import { x } from './util/index.js'`, never
+`'./util'` or `'./util/index'`). TypeScript emits import paths verbatim, so the `.js` you write is
+what ends up in `esm/*.js`, `cjs/*.js`, **and** the `.d.ts` files; the `.js` specifier resolves to
+the `.ts` source at type-check / bundling time (via `moduleResolution: bundler` and webpack's
+`resolve.extensionAlias`). Writing a bare or `.ts` specifier builds locally but breaks strict-ESM
+consumers. The `local-rules/enforce-fully-specified-imports` ESLint rule enforces this for
+`packages/js-core/src/**` (spec files excluded).
+
 When adding a new sub-path:
 
 1. Create `src/<name>.ts` (single file) or `src/<name>/index.ts` (folder with a barrel)

@@ -1,3 +1,3 @@
-export { createDisplay, ConsoleApiName, globalConsole, originalConsoleMethods } from './display'
-export type { Display } from './display'
-export { setDebugMode, getDebugMode } from './debug'
+export { createDisplay, ConsoleApiName, globalConsole, originalConsoleMethods } from './display.js'
+export type { Display } from './display.js'
+export { setDebugMode, getDebugMode } from './debug.js'

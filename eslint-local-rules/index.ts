@@ -8,6 +8,7 @@ import disallowUrlConstructorPatchValues from './disallowUrlConstructorPatchValu
 import disallowGenericUtils from './disallowGenericUtils.ts'
 import disallowNonScripts from './disallowNonScripts.ts'
 import enforceProdDepsImports from './enforceProdDepsImports.ts'
+import enforceFullySpecifiedImports from './enforceFullySpecifiedImports.ts'
 import secureCommandExecution from './secureCommandExecution.ts'
 import monitorUntilCommentRules from './monitorUntilCommentRules.ts'
 
@@ -30,6 +31,7 @@ export default {
   'disallow-generic-utils': disallowGenericUtils,
   'disallow-non-scripts': disallowNonScripts,
   'enforce-prod-deps-imports': enforceProdDepsImports,
+  'enforce-fully-specified-imports': enforceFullySpecifiedImports,
   'secure-command-execution': secureCommandExecution,
   ...monitorUntilCommentRules,
 }

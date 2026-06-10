@@ -290,6 +290,11 @@ export default defineConfig(
           ignore: [
             // ignore packages index files so `[...]/test/*` can import from the `[...]/src/*`
             'packages/*/src/index.ts',
+            // `@datadog/js-core` ships strict ESM, so cross-folder imports must be fully specified
+            // (e.g. `./util/index.js`) — the bare `./util` directory import this rule would
+            // otherwise require is not resolvable under `"type": "module"`. Importing the explicit
+            // barrel path still goes *through* the index, so encapsulation is preserved.
+            'packages/js-core/src/**/index.ts',
           ],
         },
       ],
@@ -322,6 +327,22 @@ export default defineConfig(
     files: ['scripts/**'],
     rules: {
       'import-x/extensions': ['error', 'ignorePackages'],
+    },
+  },
+
+  {
+    // `@datadog/js-core` ships strict ESM (`esm/package.json` has `"type": "module"`), so its
+    // emitted relative imports must be fully specified. TypeScript emits import paths verbatim, so
+    // the source must carry explicit `.js` extensions (which resolve to the `.ts` source at
+    // type-check time). Enforce that so we don't regress into bare specifiers that break under
+    // strict ESM resolution (webpack 5 `fullySpecified`). `import-x/extensions` can't express this
+    // (it validates against the on-disk `.ts` file, not the emitted `.js`), hence a dedicated rule.
+    files: ['packages/js-core/src/**/*.ts'],
+    // Specs run under karma's bundler (not strict ESM) and are never shipped, so bare specifiers
+    // are fine there.
+    ignores: [SPEC_FILES],
+    rules: {
+      'local-rules/enforce-fully-specified-imports': 'error',
     },
   },
 

@@ -56,6 +56,14 @@ export default ({
 
   resolve: {
     extensions: ['.ts', '.js', '.tsx'],
+    // Resolve `.js`/`.jsx` specifiers to their TypeScript sources first. Source that targets strict
+    // ESM (e.g. `@datadog/js-core`) must write fully-specified `.js` imports that point at `.ts`
+    // files; without this mapping webpack would look for a literal `.js` file and fail. Extensionless
+    // imports elsewhere are unaffected.
+    extensionAlias: {
+      '.js': ['.ts', '.js'],
+      '.jsx': ['.tsx', '.jsx'],
+    },
     plugins: [new TsconfigPathsPlugin({ configFile: tsconfigPath })],
     alias: {
       // The default "pako.esm.js" build is not transpiled to es5

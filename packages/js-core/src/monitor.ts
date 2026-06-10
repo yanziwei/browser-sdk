@@ -1,5 +1,5 @@
-import { getDebugMode } from './util'
-import type { Display } from './util'
+import { getDebugMode } from './util/index.js'
+import type { Display } from './util/index.js'
 
 /** An isolated monitor, as returned by {@link createMonitor}. */
 export interface Monitor {
